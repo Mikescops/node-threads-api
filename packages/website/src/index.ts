@@ -7,6 +7,7 @@ import path from 'path';
 import { configDev } from './config/index.js';
 import https from 'https';
 import fs from 'fs';
+import ThreadsSDK, { ProfileResponse } from 'threads-api-sdk';
 
 declare module 'express-session' {
     interface SessionData {
@@ -102,6 +103,8 @@ app.use(
     })
 );
 
+let threadsApi = new ThreadsSDK();
+
 https
     .createServer(
         {
@@ -126,8 +129,8 @@ const useInitialAuthenticationValues = (req: express.Request) => {
 const buildGraphAPIURL = (
     path: string,
     searchParams: Record<string, string>,
-    accessToken: string | null,
-    base_url: string | null
+    accessToken?: string | null,
+    base_url?: string | null
 ) => {
     const url = new URL(path, base_url ?? GRAPH_API_BASE_URL);
 
@@ -137,6 +140,18 @@ const buildGraphAPIURL = (
     }
 
     return url.toString();
+};
+
+const loggedInUserChecker = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (req.session.access_token && req.session.user_id) {
+        next();
+    } else if (initial_access_token && initial_user_id) {
+        useInitialAuthenticationValues(req);
+        next();
+    } else {
+        const returnUrl = encodeURIComponent(req.originalUrl);
+        res.redirect(`/?${PARAMS__RETURN_URL}=${returnUrl}`);
+    }
 };
 
 app.get('/', async (req, res) => {
@@ -165,4 +180,54 @@ app.get('/login', (req, res) => {
     );
 
     res.redirect(url);
+});
+
+app.get('/callback', async (req, res) => {
+    const code = req.query.code;
+    if (!code) {
+        res.render('index', {
+            error: 'No code provided',
+        });
+        return;
+    }
+
+    const uri = buildGraphAPIURL('oauth/access_token', {}, null, GRAPH_API_BASE_URL);
+
+    try {
+        const response = await threadsApi.exchangeCodeForToken({
+            code: code.toString(),
+            client_id: APP_ID,
+            client_secret: API_SECRET,
+            redirect_uri: REDIRECT_URI,
+        });
+        req.session.access_token = response.access_token;
+        req.session.user_id = response.user_id;
+        res.redirect('/account');
+    } catch (err) {
+        console.error(err);
+        res.render('index', {
+            error: `There was an error with the request: ${err}`,
+        });
+    }
+});
+
+app.get('/account', loggedInUserChecker, async (req, res) => {
+    let userDetails: (ProfileResponse & { user_profile_url?: string }) | null = null;
+    try {
+        const response = await threadsApi.getUserProfile(req.session.access_token ?? '', req.session.user_id ?? '', [
+            'id',
+            'threads_biography',
+            'threads_profile_picture_url',
+            'username',
+        ]);
+        userDetails = response;
+        userDetails.user_profile_url = `https://www.threads.net/@${response.username}`;
+    } catch (e) {
+        console.error(e);
+    }
+
+    res.render('account', {
+        title: 'Account',
+        ...(userDetails ?? {}),
+    });
 });
