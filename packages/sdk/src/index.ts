@@ -1,5 +1,4 @@
 import got from 'got';
-import { configDev } from './config/index.js';
 
 interface AuthParams {
     client_id: string;
@@ -26,6 +25,13 @@ interface ErrorResponse {
     error_message: string;
 }
 
+interface ProfileResponse {
+    id: string;
+    username: string;
+    threads_profile_picture_url: string;
+    threads_biography: string;
+}
+
 class ThreadsAuthSDK {
     private authorizeEndpoint = 'https://threads.net/oauth/authorize';
     private tokenEndpoint = 'https://graph.threads.net/oauth/access_token';
@@ -37,7 +43,6 @@ class ThreadsAuthSDK {
     }
 
     async exchangeCodeForToken(params: TokenParams): Promise<TokenResponse> {
-        console.log(params);
         const response = await got.post(this.tokenEndpoint, {
             form: {
                 client_id: params.client_id,
@@ -58,35 +63,19 @@ class ThreadsAuthSDK {
             throw new Error((response.body as ErrorResponse).error_message);
         }
     }
-}
 
-// Usage Example
-const threadsAuthSDK = new ThreadsAuthSDK();
+    async getUserProfile(accessToken: string, username: string): Promise<ProfileResponse> {
+        const fields = 'id,username,threads_profile_picture_url,threads_biography';
+        const url = `https://graph.threads.net/v1.0/me?fields=${fields}&access_token=${accessToken}&username=${username}`;
 
-// Step 1: Get Authorization URL
-const authUrl = threadsAuthSDK.getAuthorizationUrl({
-    client_id: configDev.appId,
-    redirect_uri: 'https://pixeltest.requestcatcher.com/test',
-    scope: 'threads_basic,threads_content_publish',
-});
+        const response = await got.get(url, { responseType: 'json' });
 
-console.log('Authorization URL:', authUrl);
-
-// Step 2: Exchange Code for Token
-async function getAccessToken(code: string) {
-    try {
-        const tokenResponse = await threadsAuthSDK.exchangeCodeForToken({
-            client_id: configDev.appId,
-            client_secret: configDev.secret,
-            code: code,
-            redirect_uri: 'https://pixeltest.requestcatcher.com/test',
-        });
-
-        console.log('Access Token:', tokenResponse.access_token);
-        console.log('User ID:', tokenResponse.user_id);
-    } catch (error: any) {
-        console.error('Error exchanging code for token:', error.message);
+        if (response.statusCode === 200) {
+            return response.body as ProfileResponse;
+        } else {
+            throw new Error((response.body as ErrorResponse).error_message);
+        }
     }
 }
 
-getAccessToken(configDev.oauthCode);
+export default ThreadsAuthSDK;
