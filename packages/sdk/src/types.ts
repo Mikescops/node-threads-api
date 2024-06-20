@@ -93,3 +93,24 @@ export interface UserTotalValueMetricData {
     description: string;
     id: string;
 }
+
+export interface GetMediaInsightsParams {
+    accessToken: string;
+    mediaId: string;
+    metric: MetricTypes;
+}
+
+export interface MediaInsightsResponse {
+    data: MediaMetricData[];
+}
+
+export interface MediaMetricData {
+    name: MetricTypes;
+    period: string;
+    values: {
+        value: number;
+    }[];
+    title: string;
+    description: string;
+    id: string;
+}

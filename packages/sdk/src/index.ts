@@ -1,15 +1,15 @@
-import {
-    AuthScopes,
-    ProfileFields,
-    ProfileResponse,
-    UserTimeSeriesMetricData,
-    UserTotalValueMetricData,
-} from './types';
 import { BaseResource } from './base.js';
 import { User } from './user.js';
 import { Insights } from './insights.js';
 
-export { AuthScopes, ProfileResponse, ProfileFields, UserTimeSeriesMetricData, UserTotalValueMetricData };
+export {
+    AuthScopes,
+    MediaMetricData,
+    ProfileResponse,
+    ProfileFields,
+    UserTimeSeriesMetricData,
+    UserTotalValueMetricData,
+} from './types';
 
 const resources: Record<string, any> = {
     Insights,

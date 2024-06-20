@@ -1,6 +1,12 @@
 import got from 'got';
 import { BaseResource } from './base.js';
-import { GetUserInsightsParams, UserInsightsResponse, ErrorResponse } from './types.js';
+import {
+    GetUserInsightsParams,
+    UserInsightsResponse,
+    ErrorResponse,
+    GetMediaInsightsParams,
+    MediaInsightsResponse,
+} from './types.js';
 
 export class Insights extends BaseResource {
     constructor() {
@@ -18,7 +24,7 @@ export class Insights extends BaseResource {
         const queryThreadUrl = this.buildGraphApiUrl(
             `${userId}/threads_insights`,
             {
-                metric: metric,
+                metric,
                 ...(since ? { since } : {}),
                 ...(until ? { until } : {}),
             },
@@ -29,6 +35,31 @@ export class Insights extends BaseResource {
 
         if (response.statusCode === 200) {
             return response.body as UserInsightsResponse;
+        } else {
+            throw new Error((response.body as ErrorResponse).error.message);
+        }
+    };
+
+    /**
+     * Retrieve insights for a Threads media object.
+     * @param params
+     * @returns
+     */
+    public getMediaInsights = async (params: GetMediaInsightsParams): Promise<MediaInsightsResponse> => {
+        const { accessToken, mediaId, metric } = params;
+
+        const queryThreadUrl = this.buildGraphApiUrl(
+            `${mediaId}/insights`,
+            {
+                metric,
+            },
+            accessToken
+        );
+
+        const response = await got.get(queryThreadUrl, { responseType: 'json', throwHttpErrors: false });
+
+        if (response.statusCode === 200) {
+            return response.body as MediaInsightsResponse;
         } else {
             throw new Error((response.body as ErrorResponse).error.message);
         }
