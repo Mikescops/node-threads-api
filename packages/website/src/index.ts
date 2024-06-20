@@ -7,7 +7,8 @@ import path from 'path';
 import { configDev } from './config/index.js';
 import https from 'https';
 import fs from 'fs';
-import ThreadsSDK, { ProfileResponse } from 'threads-api-sdk';
+import ThreadsSDK, { ProfileResponse, UserTotalValueMetricData } from 'threads-api-sdk';
+import { getInsightsValue, getInsightsTotalValue } from './utils.js';
 
 declare module 'express-session' {
     interface SessionData {
@@ -23,10 +24,6 @@ const PORT = 3000;
 const APP_ID = configDev.appId;
 const API_SECRET = configDev.secret;
 const REDIRECT_URI = `https://${HOST}:${PORT}/callback`;
-const GRAPH_API_VERSION = 'v1.0';
-
-const GRAPH_API_BASE_URL = 'https://graph.threads.net/' + (GRAPH_API_VERSION ? GRAPH_API_VERSION + '/' : '');
-const AUTHORIZATION_BASE_URL = 'https://threads.net';
 
 const DEFAULT_THREADS_QUERY_LIMIT = 10;
 
@@ -126,22 +123,6 @@ const useInitialAuthenticationValues = (req: express.Request) => {
     initial_user_id = undefined;
 };
 
-const buildGraphAPIURL = (
-    path: string,
-    searchParams: Record<string, string>,
-    accessToken?: string | null,
-    base_url?: string | null
-) => {
-    const url = new URL(path, base_url ?? GRAPH_API_BASE_URL);
-
-    url.search = new URLSearchParams(searchParams).toString();
-    if (accessToken) {
-        url.searchParams.append(PARAMS__ACCESS_TOKEN, accessToken);
-    }
-
-    return url.toString();
-};
-
 const loggedInUserChecker = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (req.session.access_token && req.session.user_id) {
         next();
@@ -167,17 +148,11 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/login', (req, res) => {
-    const url = buildGraphAPIURL(
-        'oauth/authorize',
-        {
-            [PARAMS__SCOPE]: SCOPES.join(','),
-            [PARAMS__CLIENT_ID]: APP_ID,
-            [PARAMS__REDIRECT_URI]: REDIRECT_URI,
-            [PARAMS__RESPONSE_TYPE]: 'code',
-        },
-        null,
-        AUTHORIZATION_BASE_URL
-    );
+    const url = threadsApi.getAuthorizationUrl({
+        clientId: APP_ID,
+        redirectUri: REDIRECT_URI,
+        scopes: SCOPES as any,
+    });
 
     res.redirect(url);
 });
@@ -191,14 +166,12 @@ app.get('/callback', async (req, res) => {
         return;
     }
 
-    const uri = buildGraphAPIURL('oauth/access_token', {}, null, GRAPH_API_BASE_URL);
-
     try {
         const response = await threadsApi.exchangeCodeForToken({
             code: code.toString(),
-            client_id: APP_ID,
-            client_secret: API_SECRET,
-            redirect_uri: REDIRECT_URI,
+            clientId: APP_ID,
+            clientSecret: API_SECRET,
+            redirectUri: REDIRECT_URI,
         });
         req.session.access_token = response.access_token;
         req.session.user_id = response.user_id;
@@ -214,12 +187,11 @@ app.get('/callback', async (req, res) => {
 app.get('/account', loggedInUserChecker, async (req, res) => {
     let userDetails: (ProfileResponse & { user_profile_url?: string }) | null = null;
     try {
-        const response = await threadsApi.getUserProfile(req.session.access_token ?? '', req.session.user_id ?? '', [
-            'id',
-            'threads_biography',
-            'threads_profile_picture_url',
-            'username',
-        ]);
+        const response = await threadsApi.getUserProfile({
+            accessToken: req.session.access_token ?? '',
+            username: 'me',
+            fields: ['id', 'threads_biography', 'threads_profile_picture_url', 'username'],
+        });
         userDetails = response;
         userDetails.user_profile_url = `https://www.threads.net/@${response.username}`;
     } catch (e) {
@@ -229,5 +201,43 @@ app.get('/account', loggedInUserChecker, async (req, res) => {
     res.render('account', {
         title: 'Account',
         ...(userDetails ?? {}),
+    });
+});
+
+app.get('/userInsights', loggedInUserChecker, async (req, res) => {
+    const { since, until } = req.query;
+
+    const data = await threadsApi.getInsights({
+        accessToken: req.session.access_token ?? '',
+        userId: req.session.user_id ?? '',
+        metric: [
+            FIELD__VIEWS,
+            FIELD__LIKES,
+            FIELD__REPLIES,
+            FIELD__QUOTES,
+            FIELD__REPOSTS,
+            FIELD__FOLLOWERS_COUNT,
+        ].join(','),
+        since: since?.toString(),
+        until: until?.toString(),
+    });
+
+    const metrics = data?.data ?? [];
+    for (const index in metrics) {
+        const metric = metrics[index];
+        if (metric.name === FIELD__VIEWS) {
+            // The "views" metric returns as a value for user insights
+            getInsightsValue(metric);
+        } else {
+            // All other metrics return as a total value
+            getInsightsTotalValue(metric);
+        }
+    }
+
+    res.render('user_insights', {
+        title: 'User Insights',
+        metrics,
+        since,
+        until,
     });
 });

@@ -1,64 +1,87 @@
 import got from 'got';
+import {
+    AuthParams,
+    AuthScopes,
+    TokenParams,
+    TokenResponse,
+    ErrorResponse,
+    ProfileFields,
+    ProfileResponse,
+    GetUserInsightsParams,
+    GetProfileParams,
+    UserInsightsResponse,
+    UserTimeSeriesMetricData,
+    UserTotalValueMetricData,
+} from './types';
 
-interface AuthParams {
-    client_id: string;
-    redirect_uri: string;
-    scope: string;
-    state?: string;
-}
+export { AuthScopes, ProfileResponse, ProfileFields, UserTimeSeriesMetricData, UserTotalValueMetricData };
 
-interface TokenParams {
-    client_id: string;
-    client_secret: string;
-    code: string;
-    redirect_uri: string;
-}
-
-interface TokenResponse {
-    access_token: string;
-    user_id: string;
-}
-
-interface ErrorResponse {
-    error_type: string;
-    code: number;
-    error_message: string;
-}
-
-export interface ProfileResponse {
-    id: string;
-    username: string;
-    threads_profile_picture_url: string;
-    threads_biography: string;
-}
-
-enum ProfileFieldsEnum {
-    ID = 'id',
-    USERNAME = 'username',
-    BIOGRAPHY = 'threads_biography',
-    PROFILE_PICTURE = 'threads_profile_picture_url',
-}
-// values of ProfileFieldsEnum
-type ProfileFields = `${ProfileFieldsEnum}`;
+const PARAMS__ACCESS_TOKEN = 'access_token';
+const PARAMS__CLIENT_ID = 'client_id';
+const PARAMS__CONFIG = 'config';
+const PARAMS__FIELDS = 'fields';
+const PARAMS__HIDE = 'hide';
+const PARAMS__METRIC = 'metric';
+const PARAMS__QUOTA_USAGE = 'quota_usage';
+const PARAMS__REDIRECT_URI = 'redirect_uri';
+const PARAMS__REPLY_CONFIG = 'reply_config';
+const PARAMS__REPLY_CONTROL = 'reply_control';
+const PARAMS__REPLY_QUOTA_USAGE = 'reply_quota_usage';
+const PARAMS__REPLY_TO_ID = 'reply_to_id';
+const PARAMS__RESPONSE_TYPE = 'response_type';
+const PARAMS__RETURN_URL = 'return_url';
+const PARAMS__SINCE = 'since';
+const PARAMS__SCOPE = 'scope';
+const PARAMS__TEXT = 'text';
+const PARAMS__UNTIL = 'until';
 
 class ThreadsSDK {
-    private authorizeEndpoint = 'https://threads.net/oauth/authorize';
-    private tokenEndpoint = 'https://graph.threads.net/oauth/access_token';
+    public graphApiVersion = 'v1.0';
+    public graphApiBaseUrl = 'https://graph.threads.net/' + (this.graphApiVersion ? this.graphApiVersion + '/' : '');
+    public authorizationBaseUrl = 'https://threads.net';
 
-    getAuthorizationUrl(params: AuthParams): string {
-        const queryString = `client_id=${params.client_id}&redirect_uri=${params.redirect_uri}&scope=${params.scope}&response_type=code&state=${params.state ?? 'static'}`;
+    public buildGraphApiUrl = (
+        path: string,
+        searchParams: Record<string, string>,
+        accessToken?: string | null,
+        base_url?: string | null
+    ) => {
+        const url = new URL(path, base_url ?? this.graphApiBaseUrl);
 
-        return `${this.authorizeEndpoint}?${queryString}`;
-    }
+        url.search = new URLSearchParams(searchParams).toString();
+        if (accessToken) {
+            url.searchParams.append(PARAMS__ACCESS_TOKEN, accessToken);
+        }
 
-    async exchangeCodeForToken(params: TokenParams): Promise<TokenResponse> {
-        const response = await got.post(this.tokenEndpoint, {
+        return url.toString();
+    };
+
+    public getAuthorizationUrl = (params: AuthParams): string => {
+        const url = this.buildGraphApiUrl(
+            'oauth/authorize',
+            {
+                [PARAMS__SCOPE]: params.scopes.join(','),
+                [PARAMS__CLIENT_ID]: params.clientId,
+                [PARAMS__REDIRECT_URI]: params.redirectUri,
+                [PARAMS__RESPONSE_TYPE]: 'code',
+            },
+            null,
+            this.authorizationBaseUrl
+        );
+
+        return url;
+    };
+
+    public exchangeCodeForToken = async (params: TokenParams): Promise<TokenResponse> => {
+        const uri = this.buildGraphApiUrl('oauth/access_token', {}, null, this.graphApiBaseUrl);
+
+        const response = await got.post(uri, {
             form: {
-                client_id: params.client_id,
-                client_secret: params.client_secret,
+                client_id: params.clientId,
+                client_secret: params.clientSecret,
                 code: params.code,
                 grant_type: 'authorization_code',
-                redirect_uri: params.redirect_uri,
+                redirect_uri: params.redirectUri,
             },
             responseType: 'json',
             throwHttpErrors: false,
@@ -67,22 +90,51 @@ class ThreadsSDK {
         if (response.statusCode === 200) {
             return response.body as TokenResponse;
         } else {
-            throw new Error((response.body as ErrorResponse).error_message);
+            throw new Error((response.body as ErrorResponse).error.message);
         }
-    }
+    };
 
-    async getUserProfile(accessToken: string, username: string, fields: ProfileFields[]): Promise<ProfileResponse> {
-        const concatenatedFields = fields.join(',');
-        const url = `https://graph.threads.net/v1.0/me?fields=${concatenatedFields}&access_token=${accessToken}&username=${username}`;
+    public getUserProfile = async (params: GetProfileParams): Promise<ProfileResponse> => {
+        const { accessToken, username, fields } = params;
 
-        const response = await got.get(url, { responseType: 'json' });
+        const getUserDetailsUrl = this.buildGraphApiUrl(
+            username,
+            {
+                [PARAMS__FIELDS]: fields.join(','),
+            },
+            accessToken
+        );
+
+        const response = await got.get(getUserDetailsUrl, { responseType: 'json', throwHttpErrors: false });
 
         if (response.statusCode === 200) {
             return response.body as ProfileResponse;
         } else {
-            throw new Error((response.body as ErrorResponse).error_message);
+            throw new Error((response.body as ErrorResponse).error.message);
         }
-    }
+    };
+
+    public getInsights = async (params: GetUserInsightsParams): Promise<UserInsightsResponse> => {
+        const { accessToken, userId, metric, since, until } = params;
+
+        const queryThreadUrl = this.buildGraphApiUrl(
+            `${userId}/threads_insights`,
+            {
+                [PARAMS__METRIC]: metric,
+                ...(since ? { [PARAMS__SINCE]: since } : {}),
+                ...(until ? { [PARAMS__UNTIL]: until } : {}),
+            },
+            accessToken
+        );
+
+        const response = await got.get(queryThreadUrl, { responseType: 'json', throwHttpErrors: false });
+
+        if (response.statusCode === 200) {
+            return response.body as UserInsightsResponse;
+        } else {
+            throw new Error((response.body as ErrorResponse).error.message);
+        }
+    };
 }
 
 export default ThreadsSDK;
