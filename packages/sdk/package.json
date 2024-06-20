@@ -1,5 +1,5 @@
 {
-    "name": "threads-api",
+    "name": "threads-api-wrapper",
     "version": "0.0.1",
     "description": "A SDK to manage Threads API in Node.js",
     "main": "dist/index.js",
