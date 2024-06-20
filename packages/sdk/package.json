@@ -1,0 +1,21 @@
+{
+    "name": "threads-api-sdk",
+    "version": "1.0.0",
+    "description": "A SDK to manage Threads API in Node.js",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js"
+    },
+    "keywords": [],
+    "author": "Corentin Mors",
+    "license": "MIT",
+    "dependencies": {
+        "got": "^14.4.1"
+    },
+    "devDependencies": {
+        "@types/node": "^18.19.34"
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "name": "node-threads-api",
+    "version": "1.0.0",
+    "description": "A SDK to manage Threads API in Node.js",
+    "main": "build/index.js",
+    "type": "module",
+    "scripts": {
+        "build:sdk": "pnpm --filter threads-api-sdk build",
+        "build:website": "pnpm --filter threads-api-website build",
+        "build": "pnpm build:sdk && pnpm build:website",
+        "start:sdk": "pnpm --filter threads-api-sdk start",
+        "start:website": "pnpm --filter threads-api-website start"
+    },
+    "keywords": [],
+    "author": "Corentin Mors",
+    "license": "MIT",
+    "devDependencies": {
+        "@local/tsconfig": "workspace:^",
+        "@types/node": "^18.19.34",
+        "eslint": "^9.5.0",
+        "prettier": "^3.3.2",
+        "typescript": "^5.4.5",
+        "typescript-eslint": "^7.13.1"
+    }
+}
