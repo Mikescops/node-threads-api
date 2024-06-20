@@ -7,7 +7,7 @@ import path from 'path';
 import { configDev } from './config/index.js';
 import https from 'https';
 import fs from 'fs';
-import ThreadsSDK, { ProfileResponse, UserTotalValueMetricData } from 'threads-api-sdk';
+import ThreadsSDK, { ProfileResponse } from 'threads-api';
 import { getInsightsValue, getInsightsTotalValue, getCursorUrlFromGraphApiPagingUrl } from './utils.js';
 
 declare module 'express-session' {

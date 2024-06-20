@@ -16,7 +16,7 @@
         "express": "^4.17.3",
         "express-session": "^1.18.0",
         "pug": "^3.0.3",
-        "threads-api-sdk": "workspace:*"
+        "threads-api": "workspace:*"
     },
     "devDependencies": {
         "@types/body-parser": "^1.19.5",

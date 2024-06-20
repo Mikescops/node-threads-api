@@ -1,16 +1,31 @@
 {
-    "name": "threads-api-sdk",
-    "version": "1.0.0",
+    "name": "threads-api",
+    "version": "0.0.1",
     "description": "A SDK to manage Threads API in Node.js",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "type": "module",
+    "files": [
+        "dist"
+    ],
+    "repository": "github:Mikescops/node-threads-api",
     "scripts": {
         "build": "tsc",
         "start": "node dist/index.js"
     },
-    "keywords": [],
-    "author": "Corentin Mors",
+    "keywords": [
+        "threads",
+        "api",
+        "sdk",
+        "node",
+        "typescript",
+        "meta"
+    ],
+    "author": {
+        "name": "Corentin Mors",
+        "email": "medias@pixelswap.fr",
+        "url": "https://pixelswap.fr/"
+    },
     "license": "MIT",
     "dependencies": {
         "got": "^14.4.1"
