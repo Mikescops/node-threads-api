@@ -1,12 +1,13 @@
 {
     "name": "threads-api-wrapper",
-    "version": "0.0.1",
+    "version": "1.0.1",
     "description": "A SDK to manage Threads API in Node.js",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "type": "module",
     "files": [
-        "dist"
+        "dist",
+        "README.md"
     ],
     "repository": "github:Mikescops/node-threads-api",
     "scripts": {
