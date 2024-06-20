@@ -9,7 +9,8 @@
         "build:website": "pnpm --filter threads-api-website build",
         "build": "pnpm build:sdk && pnpm build:website",
         "start:sdk": "pnpm --filter threads-api start",
-        "start:website": "pnpm --filter threads-api-website start"
+        "start:website": "pnpm --filter threads-api-website start",
+        "publish:sdk": "cp README.md packages/sdk/README.md && pnpm --filter threads-api-wrapper publish && rm packages/sdk/README.md"
     },
     "keywords": [],
     "author": "Corentin Mors",
