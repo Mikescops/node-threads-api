@@ -10,7 +10,7 @@
         "build": "pnpm build:sdk && pnpm build:website",
         "start:sdk": "pnpm --filter threads-api start",
         "start:website": "pnpm --filter threads-api-website start",
-        "publish:sdk": "cp README.md packages/sdk/README.md && pnpm --filter threads-api-wrapper publish && rm packages/sdk/README.md"
+        "publish:sdk": "cp README.md packages/sdk/README.md && pnpm --filter threads-api-wrapper publish --no-git-checks && rm packages/sdk/README.md"
     },
     "keywords": [],
     "author": "Corentin Mors",
