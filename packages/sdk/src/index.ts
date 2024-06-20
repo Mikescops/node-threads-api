@@ -7,6 +7,7 @@ export {
     MediaMetricData,
     ProfileResponse,
     ProfileFields,
+    ThreadsFields,
     UserTimeSeriesMetricData,
     UserTotalValueMetricData,
 } from './types';
