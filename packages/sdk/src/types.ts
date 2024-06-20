@@ -21,7 +21,7 @@ export interface TokenParams {
 
 export interface TokenResponse {
     access_token: string;
-    user_id: number;
+    user_id: string;
 }
 
 export interface ErrorResponse {
@@ -180,9 +180,19 @@ export interface GetPublishingLimitParams {
     fields?: string[];
 }
 
-export interface PublishingLimitResponse {
+export interface PublishingLimitData {
     quota_usage?: number;
-    config?: any;
+    config?: {
+        quota_total: number;
+        quota_duration: number;
+    };
     reply_quota_usage?: number;
-    reply_config?: any;
+    reply_config?: {
+        quota_total: number;
+        quota_duration: number;
+    };
+}
+
+export interface PublishingLimitResponse {
+    data: PublishingLimitData[];
 }
