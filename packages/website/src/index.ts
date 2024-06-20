@@ -25,8 +25,6 @@ const APP_ID = configDev.appId;
 const API_SECRET = configDev.secret;
 const REDIRECT_URI = `https://${HOST}:${PORT}/callback`;
 
-const DEFAULT_THREADS_QUERY_LIMIT = 10;
-
 const FIELD__ERROR_MESSAGE = 'error_message';
 const FIELD__FOLLOWERS_COUNT = 'followers_count';
 const FIELD__HIDE_STATUS = 'hide_status';
@@ -187,7 +185,7 @@ app.get('/callback', async (req, res) => {
 app.get('/account', loggedInUserChecker, async (req, res) => {
     let userDetails: (ProfileResponse & { user_profile_url?: string }) | null = null;
     try {
-        const response = await threadsApi.getUserProfile({
+        const response = await threadsApi.User.getUserProfile({
             accessToken: req.session.access_token ?? '',
             username: 'me',
             fields: ['id', 'threads_biography', 'threads_profile_picture_url', 'username'],
@@ -207,7 +205,7 @@ app.get('/account', loggedInUserChecker, async (req, res) => {
 app.get('/userInsights', loggedInUserChecker, async (req, res) => {
     const { since, until } = req.query;
 
-    const data = await threadsApi.getInsights({
+    const data = await threadsApi.Insights.getUserInsights({
         accessToken: req.session.access_token ?? '',
         userId: req.session.user_id ?? '',
         metric: [
