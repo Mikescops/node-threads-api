@@ -49,14 +49,15 @@ export class BaseResource {
                 grant_type: 'authorization_code',
                 redirect_uri: params.redirectUri,
             },
-            responseType: 'json',
             throwHttpErrors: false,
         });
 
+        const body = response.body.replace(/([\[:])?(\d+)([,\}\]])/g, '$1"$2"$3');
+
         if (response.statusCode === 200) {
-            return response.body as TokenResponse;
+            return JSON.parse(body) as TokenResponse;
         } else {
-            throw new Error((response.body as ErrorResponse).error.message);
+            throw new Error((JSON.parse(body) as ErrorResponse).error.message);
         }
     };
 }

@@ -172,12 +172,12 @@ app.get('/callback', async (req, res) => {
             redirectUri: REDIRECT_URI,
         });
         req.session.access_token = response.access_token;
-        req.session.user_id = response.user_id.toString();
+        req.session.user_id = response.user_id;
         res.redirect('/account');
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
         res.render('index', {
-            error: `There was an error with the request: ${err}`,
+            error: `There was an error with the request: ${error}`,
         });
     }
 });
@@ -251,11 +251,13 @@ app.get('/userInsights', loggedInUserChecker, async (req, res) => {
 app.get('/publishingLimit', loggedInUserChecker, async (req, res) => {
     let data;
     try {
-        data = await threadsApi.User.getUserPublishingLimit({
+        const response = await threadsApi.User.getUserPublishingLimit({
             accessToken: req.session.access_token ?? '',
             threadsUserId: req.session.user_id ?? '',
             fields: [PARAMS__QUOTA_USAGE, PARAMS__CONFIG, PARAMS__REPLY_QUOTA_USAGE, PARAMS__REPLY_CONFIG],
         });
+
+        data = response.data[0] ?? {};
     } catch (error) {
         console.error(error);
         return res.render('index', {
@@ -263,10 +265,10 @@ app.get('/publishingLimit', loggedInUserChecker, async (req, res) => {
         });
     }
 
-    const quotaUsage = data[PARAMS__QUOTA_USAGE];
-    const config = data[PARAMS__CONFIG];
-    const replyQuotaUsage = data[PARAMS__REPLY_QUOTA_USAGE];
-    const replyConfig = data[PARAMS__REPLY_CONFIG];
+    const quotaUsage = data[PARAMS__QUOTA_USAGE] ?? {};
+    const config = data[PARAMS__CONFIG] ?? {};
+    const replyQuotaUsage = data[PARAMS__REPLY_QUOTA_USAGE] ?? {};
+    const replyConfig = data[PARAMS__REPLY_CONFIG] ?? {};
 
     res.render('publishing_limit', {
         title: 'Publishing Limit',
