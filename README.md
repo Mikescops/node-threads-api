@@ -1,25 +1,27 @@
 # threads-api : a NodeJS SDK for Threads API
 
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/mikescops/node-threads-api)
+![npm](https://img.shields.io/npm/v/threads-api-wrapper)
+![npm](https://img.shields.io/npm/dw/threads-api-wrapper)
 ![GitHub](https://img.shields.io/github/license/mikescops/node-threads-api)
+
+A SDK in Javascript / Typescript for the Threads API
 
 > [!WARNING]
 > This project is work in progress and contributions are very welcome!
 >
 > It is in early development and is not yet ready for production use.
 
-SDK in Javascript / Typescript for Threads API
-
 ## Installation
 
 ```bash
-npm install threads-api
+npm install threads-api-wrapper
 ```
 
 ## Usage
 
 ```typescript
-import ThreadsSDK from 'threads-api';
+import ThreadsSDK from 'threads-api-wrapper';
 
 const threadsApi = new ThreadsSDK();
 
@@ -30,8 +32,45 @@ const url = threadsApi.getAuthorizationUrl({
 });
 ```
 
-> [!NOTE]
-> Other methods are available, documentation will be updated soon.
+### User
+
+```typescript
+/**
+ * Retrieve profile information about a user on Threads.
+ * @param params
+ * @returns
+ */
+getUserProfile: (params: GetProfileParams) => Promise<ProfileResponse>;
+/**
+ * Retrieve a paginated list of all Threads posts created by a user.
+ * @param params
+ * @returns
+ */
+getUserThreads: (params: GetThreadsParams) => Promise<UserThreadsResponse>;
+/**
+ * Check the app user's current publishing rate limit usage.
+ * @param params
+ * @returns
+ */
+getUserPublishingLimit: (params: GetPublishingLimitParams) => Promise<PublishingLimitResponse>;
+```
+
+### Insights
+
+```typescript
+/**
+ * Retrieve insights for a Threads user object.
+ * @param params
+ * @returns
+ */
+getUserInsights: (params: GetUserInsightsParams) => Promise<UserInsightsResponse>;
+/**
+ * Retrieve insights for a Threads media object.
+ * @param params
+ * @returns
+ */
+getMediaInsights: (params: GetMediaInsightsParams) => Promise<MediaInsightsResponse>;
+```
 
 ## Maintainer
 
