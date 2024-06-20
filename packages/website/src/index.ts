@@ -8,7 +8,7 @@ import { configDev } from './config/index.js';
 import https from 'https';
 import fs from 'fs';
 import ThreadsSDK, { ProfileResponse, UserTotalValueMetricData } from 'threads-api-sdk';
-import { getInsightsValue, getInsightsTotalValue } from './utils.js';
+import { getInsightsValue, getInsightsTotalValue, getCursorUrlFromGraphApiPagingUrl } from './utils.js';
 
 declare module 'express-session' {
     interface SessionData {
@@ -172,7 +172,7 @@ app.get('/callback', async (req, res) => {
             redirectUri: REDIRECT_URI,
         });
         req.session.access_token = response.access_token;
-        req.session.user_id = response.user_id;
+        req.session.user_id = response.user_id.toString();
         res.redirect('/account');
     } catch (err) {
         console.error(err);
@@ -205,22 +205,30 @@ app.get('/account', loggedInUserChecker, async (req, res) => {
 app.get('/userInsights', loggedInUserChecker, async (req, res) => {
     const { since, until } = req.query;
 
-    const data = await threadsApi.Insights.getUserInsights({
-        accessToken: req.session.access_token ?? '',
-        userId: req.session.user_id ?? '',
-        metric: [
-            FIELD__VIEWS,
-            FIELD__LIKES,
-            FIELD__REPLIES,
-            FIELD__QUOTES,
-            FIELD__REPOSTS,
-            FIELD__FOLLOWERS_COUNT,
-        ].join(','),
-        since: since?.toString(),
-        until: until?.toString(),
-    });
+    let data;
+    try {
+        data = await threadsApi.Insights.getUserInsights({
+            accessToken: req.session.access_token ?? '',
+            userId: req.session.user_id ?? '',
+            metric: [
+                FIELD__VIEWS,
+                FIELD__LIKES,
+                FIELD__REPLIES,
+                FIELD__QUOTES,
+                FIELD__REPOSTS,
+                FIELD__FOLLOWERS_COUNT,
+            ].join(','),
+            since: since?.toString(),
+            until: until?.toString(),
+        });
+    } catch (error) {
+        console.error(error);
+        return res.render('index', {
+            error: `There was an error with the request: ${error}`,
+        });
+    }
 
-    const metrics = data?.data ?? [];
+    const metrics = data.data;
     for (const index in metrics) {
         const metric = metrics[index];
         if (metric.name === FIELD__VIEWS) {
@@ -237,5 +245,87 @@ app.get('/userInsights', loggedInUserChecker, async (req, res) => {
         metrics,
         since,
         until,
+    });
+});
+
+app.get('/publishingLimit', loggedInUserChecker, async (req, res) => {
+    let data;
+    try {
+        data = await threadsApi.User.getUserPublishingLimit({
+            accessToken: req.session.access_token ?? '',
+            threadsUserId: req.session.user_id ?? '',
+            fields: [PARAMS__QUOTA_USAGE, PARAMS__CONFIG, PARAMS__REPLY_QUOTA_USAGE, PARAMS__REPLY_CONFIG],
+        });
+    } catch (error) {
+        console.error(error);
+        return res.render('index', {
+            error: `There was an error with the request: ${error}`,
+        });
+    }
+
+    const quotaUsage = data[PARAMS__QUOTA_USAGE];
+    const config = data[PARAMS__CONFIG];
+    const replyQuotaUsage = data[PARAMS__REPLY_QUOTA_USAGE];
+    const replyConfig = data[PARAMS__REPLY_CONFIG];
+
+    res.render('publishing_limit', {
+        title: 'Publishing Limit',
+        quotaUsage,
+        config,
+        replyQuotaUsage,
+        replyConfig,
+    });
+});
+
+app.get('/threads', loggedInUserChecker, async (req, res) => {
+    const { before, after, limit } = req.query;
+
+    let threads = [];
+    let paging: {
+        nextUrl?: string;
+        previousUrl?: string;
+    } = {};
+
+    try {
+        const queryResponse = await threadsApi.User.getUserThreads({
+            accessToken: req.session.access_token ?? '',
+            threadsUserId: req.session.user_id ?? '',
+            fields: [
+                FIELD__TEXT,
+                FIELD__MEDIA_TYPE,
+                FIELD__MEDIA_URL,
+                FIELD__PERMALINK,
+                FIELD__TIMESTAMP,
+                FIELD__REPLY_AUDIENCE,
+            ],
+            limit: Number(limit) ?? 10,
+            before: before?.toString(),
+            after: after?.toString(),
+        });
+
+        threads = queryResponse.data;
+
+        if (queryResponse.paging) {
+            const { next, previous } = queryResponse.paging;
+
+            if (next) {
+                paging.nextUrl = getCursorUrlFromGraphApiPagingUrl(req, next);
+            }
+
+            if (previous) {
+                paging.previousUrl = getCursorUrlFromGraphApiPagingUrl(req, previous);
+            }
+        }
+    } catch (error) {
+        console.error(error);
+        return res.render('index', {
+            error: `There was an error with the request: ${error}`,
+        });
+    }
+
+    res.render('threads', {
+        paging,
+        threads,
+        title: 'Threads',
     });
 });

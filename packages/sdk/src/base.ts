@@ -8,7 +8,7 @@ export class BaseResource {
 
     public buildGraphApiUrl = (
         path: string,
-        searchParams: Record<string, string>,
+        searchParams: string | Record<string, string> | string[][] | URLSearchParams | undefined,
         accessToken?: string | null,
         base_url?: string | null
     ) => {

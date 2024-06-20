@@ -21,7 +21,7 @@ export interface TokenParams {
 
 export interface TokenResponse {
     access_token: string;
-    user_id: string;
+    user_id: number;
 }
 
 export interface ErrorResponse {
@@ -113,4 +113,76 @@ export interface MediaMetricData {
     title: string;
     description: string;
     id: string;
+}
+
+enum ThreadsFieldsEnum {
+    ID = 'id',
+    MEDIA_PRODUCT_TYPE = 'media_product_type',
+    MEDIA_TYPE = 'media_type',
+    MEDIA_URL = 'media_url',
+    PERMALINK = 'permalink',
+    OWNER = 'owner',
+    USERNAME = 'username',
+    TEXT = 'text',
+    TIMESTAMP = 'timestamp',
+    SHORTCODE = 'shortcode',
+    THUMBNAIL_URL = 'thumbnail_url',
+    CHILDREN = 'children',
+    IS_QUOTE_POST = 'is_quote_post',
+    HAS_REPLIES = 'has_replies',
+    REPLY_AUDIENCE = 'reply_audience',
+}
+
+export type ThreadsFields = `${ThreadsFieldsEnum}`;
+
+export interface GetThreadsParams {
+    accessToken: string;
+    threadsUserId: string;
+    fields?: string[];
+    since?: number | string;
+    until?: number | string;
+    limit?: number;
+    before?: string;
+    after?: string;
+}
+
+export interface ThreadData {
+    id: string;
+    media_product_type: string;
+    media_type: 'TEXT_POST' | 'IMAGE' | 'VIDEO' | 'CAROUSEL_ALBUM' | 'AUDIO' | 'REPOST_FACADE';
+    media_url?: string;
+    permalink?: string;
+    owner: string;
+    username: string;
+    text?: string;
+    timestamp: string;
+    shortcode: string;
+    thumbnail_url?: string;
+    children?: ThreadData[];
+    is_quote_post?: boolean;
+}
+
+export interface UserThreadsResponse {
+    data: ThreadData[];
+    paging?: {
+        cursors?: {
+            before?: string;
+            after?: string;
+        };
+        next?: string;
+        previous?: string;
+    };
+}
+
+export interface GetPublishingLimitParams {
+    accessToken: string;
+    threadsUserId: string;
+    fields?: string[];
+}
+
+export interface PublishingLimitResponse {
+    quota_usage?: number;
+    config?: any;
+    reply_quota_usage?: number;
+    reply_config?: any;
 }
