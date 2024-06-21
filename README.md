@@ -1,4 +1,4 @@
-# threads-api : a NodeJS SDK for Threads API
+# threads-api-wrapper : a NodeJS SDK for Threads API
 
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/mikescops/node-threads-api)
 ![npm](https://img.shields.io/npm/v/threads-api-wrapper)
