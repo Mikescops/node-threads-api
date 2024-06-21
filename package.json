@@ -5,7 +5,7 @@
     "main": "build/index.js",
     "type": "module",
     "scripts": {
-        "build:sdk": "pnpm --filter threads-api build",
+        "build:sdk": "pnpm --filter threads-api-wrapper build",
         "build:website": "pnpm --filter threads-api-website build",
         "build": "pnpm build:sdk && pnpm build:website",
         "start:sdk": "pnpm --filter threads-api start",
